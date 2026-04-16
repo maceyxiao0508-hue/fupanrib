@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
-import { Download, AlertTriangle, QrCode, Plus, Trash2, GripVertical } from 'lucide-react';
+import { Download, QrCode, Plus, Trash2, Upload } from 'lucide-react';
 
 interface ChainItem {
   title: string;
@@ -17,57 +17,139 @@ interface RadarItem {
 interface CardData {
   summary: string;
   title: string;
-  trend: 'up' | 'down';
+  trend: 'up' | 'down' | 'neutral';
+  dataSource: string;
   chain: ChainItem[];
   radar: RadarItem[];
-  risks: string[];
+  risks: { text: string; type: 'up' | 'down' | 'neutral' }[];
 }
+
+const defaultRawChain = `【政策触发】印尼政府收紧镍矿开采配额 + 调整HPM基准价公式
+【成本机制变化】HPM公式中镍矿品位系数上调，并纳入钴、铁、铬等元素计价→ 实际等同于“资源税+计价体系双重上调”
+【产业传导】镍矿现货成本抬升 → 冶炼端利润被压缩→ 市场重新计价远期成本曲线
+【盘面反应】沪镍主力合约快速上行，空头回补推动价格走强，沪镍收涨3.91%，报139480元/吨
+【现实约束】一级镍社会库存仍处相对高位 → 现货端尚未形成紧缺反馈
+【关键变量】印尼是否在7月释放新增配额（政策弹性窗口）`;
+
+const defaultRawRadar = `政策变量 100 印尼政策
+成本支撑 90 HPM重估
+库存压力 70 未去化
+需求端 30 未改善
+资金情绪 80 趋势资金`;
+
+const defaultRisks: { text: string; type: 'up' | 'down' | 'neutral' }[] = [
+  { text: '印尼是否在7月释放新增配额（政策反转风险）', type: 'down' },
+  { text: '一级镍库存是否出现持续累积（压制上行空间）', type: 'down' },
+  { text: '成本上移是否能传导至终端需求（利润传导失败风险）', type: 'down' }
+];
+
+const getRadarLabel = (score: number): string => {
+  if (score >= 90) return '极强';
+  if (score >= 70) return '偏强';
+  if (score >= 60) return '中高';
+  if (score >= 40) return '中性';
+  if (score >= 20) return '偏弱';
+  return '极弱';
+};
+
+const parseChain = (text: string): ChainItem[] => {
+  return text.split('\n').filter(line => line.trim()).map(line => {
+    const match = line.match(/^(?:【|\[)(.*?)(?:】|\])\s*(.*)$/);
+    if (match) {
+      return { title: match[1].trim(), desc: match[2].trim() };
+    }
+    const firstSpace = line.trim().search(/[\s:：]/);
+    if (firstSpace !== -1) {
+      return { 
+        title: line.substring(0, firstSpace).trim(), 
+        desc: line.substring(firstSpace + 1).trim() 
+      };
+    }
+    return { title: '环节', desc: line.trim() };
+  });
+};
+
+const parseRadar = (text: string): RadarItem[] => {
+  return text.split('\n').filter(line => line.trim()).map(line => {
+    const parts = line.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      const name = parts[0];
+      const value = parseInt(parts[1], 10);
+      if (!isNaN(value)) {
+        const desc = parts.slice(2).join(' ').replace(/^[（\(]|[）\)]$/g, '');
+        const label = `${getRadarLabel(value)}${desc ? `（${desc}）` : ''}`;
+        return { name, value, label };
+      }
+    }
+    return { name: line.trim().substring(0, 4), label: '中性', value: 50 };
+  });
+};
+
+const getRiskType = (text: string): 'up' | 'down' | 'neutral' => {
+  const upMatch = text.match(/利多|利好|支撑|涨|走强|紧缺|反弹|向上|抬升|上行/g) || [];
+  const downMatch = text.match(/利空|压制|跌|走弱|宽松|回落|向下|累积|失败|下行/g) || [];
+  if (upMatch.length > downMatch.length) return 'up';
+  if (downMatch.length > upMatch.length) return 'down';
+  return 'neutral';
+};
 
 const defaultData: CardData = {
   summary: "今天商品市场的核心交易主线是：“镍端供应收紧 + 新能源传闻扰动 + 航运情绪回落”三条线索的再定价过程。",
   title: "沪镍：印尼政策重估驱动的成本抬升行情",
   trend: 'up',
-  chain: [
-    { title: "【政策触发】", desc: "印尼政府收紧镍矿开采配额 + 调整HPM基准价公式" },
-    { title: "【成本机制变化】", desc: "HPM公式中镍矿品位系数上调，并纳入钴、铁、铬等元素计价→ 实际等同于“资源税+计价体系双重上调”" },
-    { title: "【产业传导】", desc: "镍矿现货成本抬升 → 冶炼端利润被压缩→ 市场重新计价远期成本曲线" },
-    { title: "【盘面反应】", desc: "沪镍主力合约快速上行，空头回补推动价格走强，沪镍收涨3.91%，报139480元/吨" },
-    { title: "【现实约束】", desc: "一级镍社会库存仍处相对高位 → 现货端尚未形成紧缺反馈" },
-    { title: "【关键变量】", desc: "印尼是否在7月释放新增配额（政策弹性窗口）" }
-  ],
-  radar: [
-    { name: "政策变量", value: 100, label: "极强（印尼政策）" },
-    { name: "成本支撑", value: 100, label: "极强（HPM重估）" },
-    { name: "库存压力", value: 80, label: "中高（未去化）" },
-    { name: "需求端", value: 40, label: "偏弱（未改善）" },
-    { name: "资金情绪", value: 80, label: "偏强（趋势资金）" }
-  ],
-  risks: [
-    "印尼是否在7月释放新增配额（政策反转风险）",
-    "一级镍库存是否出现持续累积（压制上行空间）",
-    "成本上移是否能传导至终端需求（利润传导失败风险）"
-  ]
+  dataSource: "金十期货研究中心、印尼能矿部(ESDM)公示文件",
+  chain: parseChain(defaultRawChain),
+  radar: parseRadar(defaultRawRadar),
+  risks: defaultRisks
 };
 
 export default function App() {
   const [data, setData] = useState<CardData>(defaultData);
+  const [rawChain, setRawChain] = useState(defaultRawChain);
+  const [rawRadar, setRawRadar] = useState(defaultRawRadar);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>("https://storage.googleapis.com/aistudio-user-content/2026-04-15/63442145-6611-477d-81b4-10642fcd6268.png");
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [publishTime, setPublishTime] = useState<string>('');
   const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const formatted = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      setPublishTime(formatted);
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleDownload = async () => {
     if (!cardRef.current) return;
     setIsGenerating(true);
+    
+    // Update time to exact generation minute
+    const now = new Date();
+    const formatted = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    setPublishTime(formatted);
+    
+    // Wait for React to render the new time
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     try {
       const canvas = await html2canvas(cardRef.current, {
-        scale: 2, // Higher resolution
+        scale: 2,
         useCORS: true,
+        allowTaint: true,
         backgroundColor: '#ffffff',
       });
-      const url = canvas.toDataURL('image/png');
+      const url = canvas.toDataURL('image/jpeg', 0.95);
       const link = document.createElement('a');
-      link.download = `金十期货卡片-${new Date().getTime()}.png`;
+      link.download = `金十期货卡片-${new Date().getTime()}.jpg`;
       link.href = url;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
     } catch (error) {
       console.error('Failed to generate image', error);
       alert('生成图片失败，请重试');
@@ -76,41 +158,46 @@ export default function App() {
     }
   };
 
-  const updateChain = (index: number, field: keyof ChainItem, value: string) => {
-    const newChain = [...data.chain];
-    newChain[index][field] = value;
-    setData({ ...data, chain: newChain });
+  const handleChainChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setRawChain(e.target.value);
+    setData({ ...data, chain: parseChain(e.target.value) });
   };
 
-  const addChainItem = () => {
-    setData({ ...data, chain: [...data.chain, { title: '【新环节】', desc: '描述内容' }] });
-  };
-
-  const removeChainItem = (index: number) => {
-    const newChain = data.chain.filter((_, i) => i !== index);
-    setData({ ...data, chain: newChain });
-  };
-
-  const updateRadar = (index: number, field: keyof RadarItem, value: string | number) => {
-    const newRadar = [...data.radar];
-    newRadar[index] = { ...newRadar[index], [field]: value };
-    setData({ ...data, radar: newRadar });
-  };
-
-  const updateRisk = (index: number, value: string) => {
-    const newRisks = [...data.risks];
-    newRisks[index] = value;
-    setData({ ...data, risks: newRisks });
+  const handleRadarChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setRawRadar(e.target.value);
+    setData({ ...data, radar: parseRadar(e.target.value) });
   };
 
   const addRisk = () => {
-    setData({ ...data, risks: [...data.risks, '新风险提示'] });
+    setData({ ...data, risks: [...data.risks, { text: '', type: 'neutral' }] });
   };
 
-  const removeRisk = (index: number) => {
-    const newRisks = data.risks.filter((_, i) => i !== index);
+  const updateRisk = (idx: number, field: 'text' | 'type', value: string) => {
+    const newRisks = [...data.risks];
+    if (field === 'text') {
+      newRisks[idx].text = value;
+    } else {
+      newRisks[idx].type = value as 'up' | 'down' | 'neutral';
+    }
     setData({ ...data, risks: newRisks });
   };
+
+  const removeRisk = (idx: number) => {
+    setData({ ...data, risks: data.risks.filter((_, i) => i !== idx) });
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, setter: React.Dispatch<React.SetStateAction<string | null>>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setter(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const trendColor = data.trend === 'up' ? 'text-[#E02424]' : data.trend === 'down' ? 'text-[#059669]' : 'text-[#1A1A1A]';
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8 font-sans">
@@ -148,12 +235,23 @@ export default function App() {
                   <select 
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] outline-none transition-all"
                     value={data.trend}
-                    onChange={(e) => setData({...data, trend: e.target.value as 'up' | 'down'})}
+                    onChange={(e) => setData({...data, trend: e.target.value as 'up' | 'down' | 'neutral'})}
                   >
                     <option value="up">大涨 (红)</option>
                     <option value="down">大跌 (绿)</option>
+                    <option value="neutral">中性 (黑)</option>
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">资料来源</label>
+                <input 
+                  type="text"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] outline-none transition-all"
+                  value={data.dataSource}
+                  onChange={(e) => setData({...data, dataSource: e.target.value})}
+                />
               </div>
             </div>
           </div>
@@ -162,74 +260,34 @@ export default function App() {
 
           {/* Trading Chain */}
           <div>
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-2">
               <h3 className="text-lg font-bold text-gray-900">交易链路</h3>
-              <button onClick={addChainItem} className="text-sm text-[#C5A059] hover:text-[#b38f4d] flex items-center">
-                <Plus className="w-4 h-4 mr-1" /> 添加环节
-              </button>
+              <span className="text-xs text-gray-500">格式：环节名称 描述（支持带【】或空格分隔）</span>
             </div>
-            <div className="space-y-3">
-              {data.chain.map((item, idx) => (
-                <div key={idx} className="flex gap-3 items-start bg-gray-50 p-3 rounded-lg border border-gray-100">
-                  <GripVertical className="w-5 h-5 text-gray-400 mt-3 cursor-move" />
-                  <div className="flex-1 space-y-2">
-                    <input 
-                      type="text"
-                      className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#C5A059] outline-none text-sm font-bold"
-                      value={item.title}
-                      onChange={(e) => updateChain(idx, 'title', e.target.value)}
-                      placeholder="【环节名称】"
-                    />
-                    <textarea 
-                      className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#C5A059] outline-none text-sm"
-                      rows={2}
-                      value={item.desc}
-                      onChange={(e) => updateChain(idx, 'desc', e.target.value)}
-                      placeholder="环节描述"
-                    />
-                  </div>
-                  <button onClick={() => removeChainItem(idx)} className="text-red-400 hover:text-red-600 mt-2">
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                </div>
-              ))}
-            </div>
+            <textarea 
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] outline-none transition-all font-mono text-sm leading-relaxed"
+              rows={8}
+              value={rawChain}
+              onChange={handleChainChange}
+              placeholder="政策触发 印尼政府收紧镍矿开采配额..."
+            />
           </div>
 
           <hr className="border-gray-200" />
 
           {/* Trading Radar */}
           <div>
-            <h3 className="text-lg font-bold text-gray-900 mb-4">交易雷达</h3>
-            <div className="space-y-3">
-              {data.radar.map((item, idx) => (
-                <div key={idx} className="flex gap-3 items-center bg-gray-50 p-3 rounded-lg border border-gray-100">
-                  <input 
-                    type="text"
-                    className="w-1/4 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#C5A059] outline-none text-sm"
-                    value={item.name}
-                    onChange={(e) => updateRadar(idx, 'name', e.target.value)}
-                    placeholder="维度名称"
-                  />
-                  <input 
-                    type="number"
-                    min="0"
-                    max="100"
-                    className="w-20 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#C5A059] outline-none text-sm"
-                    value={item.value}
-                    onChange={(e) => updateRadar(idx, 'value', parseInt(e.target.value) || 0)}
-                    placeholder="分数"
-                  />
-                  <input 
-                    type="text"
-                    className="flex-1 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#C5A059] outline-none text-sm"
-                    value={item.label}
-                    onChange={(e) => updateRadar(idx, 'label', e.target.value)}
-                    placeholder="标签描述"
-                  />
-                </div>
-              ))}
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg font-bold text-gray-900">交易雷达</h3>
+              <span className="text-xs text-gray-500">格式：维度名称 分数 补充说明（自动判断强弱）</span>
             </div>
+            <textarea 
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] outline-none transition-all font-mono text-sm leading-relaxed"
+              rows={6}
+              value={rawRadar}
+              onChange={handleRadarChange}
+              placeholder="政策变量 100 印尼政策"
+            />
           </div>
 
           <hr className="border-gray-200" />
@@ -244,19 +302,59 @@ export default function App() {
             </div>
             <div className="space-y-3">
               {data.risks.map((risk, idx) => (
-                <div key={idx} className="flex gap-3 items-center bg-gray-50 p-3 rounded-lg border border-gray-100">
-                  <input 
-                    type="text"
+                <div key={idx} className="flex gap-3 items-start bg-gray-50 p-3 rounded-lg border border-gray-100">
+                  <textarea 
                     className="flex-1 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#C5A059] outline-none text-sm"
-                    value={risk}
-                    onChange={(e) => updateRisk(idx, e.target.value)}
-                    placeholder="风险描述"
+                    rows={2}
+                    value={risk.text}
+                    onChange={(e) => updateRisk(idx, 'text', e.target.value)}
+                    placeholder="风险描述（括号内的内容将作为小标题）"
                   />
-                  <button onClick={() => removeRisk(idx)} className="text-red-400 hover:text-red-600">
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+                  <div className="flex flex-col gap-2">
+                    <select 
+                      className="w-28 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#C5A059] outline-none text-sm"
+                      value={risk.type}
+                      onChange={(e) => updateRisk(idx, 'type', e.target.value)}
+                    >
+                      <option value="up">红 (利多)</option>
+                      <option value="down">绿 (利空)</option>
+                      <option value="neutral">黑 (震荡)</option>
+                    </select>
+                    <button onClick={() => removeRisk(idx)} className="text-red-400 hover:text-red-600 self-end p-1">
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <hr className="border-gray-200" />
+
+          {/* Image Settings */}
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 mb-4">图片设置</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">顶部 Logo</label>
+                <label className="flex items-center justify-center w-full h-24 px-4 transition bg-white border-2 border-gray-300 border-dashed rounded-md appearance-none cursor-pointer hover:border-[#C5A059] focus:outline-none">
+                  <span className="flex items-center space-x-2">
+                    <Upload className="w-5 h-5 text-gray-400" />
+                    <span className="font-medium text-gray-600 text-sm">上传 Logo 图片</span>
+                  </span>
+                  <input type="file" name="file_upload" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setLogoUrl as any)} />
+                </label>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">底部二维码</label>
+                <label className="flex items-center justify-center w-full h-24 px-4 transition bg-white border-2 border-gray-300 border-dashed rounded-md appearance-none cursor-pointer hover:border-[#C5A059] focus:outline-none">
+                  <span className="flex items-center space-x-2">
+                    <Upload className="w-5 h-5 text-gray-400" />
+                    <span className="font-medium text-gray-600 text-sm">上传二维码</span>
+                  </span>
+                  <input type="file" name="file_upload" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setQrCodeUrl as any)} />
+                </label>
+              </div>
             </div>
           </div>
 
@@ -280,26 +378,37 @@ export default function App() {
             {/* The Card */}
             <div 
               ref={cardRef}
-              className="w-[960px] h-[720px] bg-white border border-[#E5E1D8] shadow-[0_20px_40px_rgba(0,0,0,0.06)] p-8 flex flex-col relative shrink-0 mx-auto"
+              className="w-[960px] min-h-[720px] bg-white border border-[#E5E1D8] shadow-[0_20px_40px_rgba(0,0,0,0.06)] p-8 flex flex-col relative shrink-0 mx-auto"
               style={{ fontFamily: '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif', color: '#1A1A1A' }}
             >
               {/* Header */}
               <div className="flex justify-between items-end border-b-2 border-[#1A1A1A] pb-3 mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-[#C5A059] rounded flex items-center justify-center text-white font-bold text-lg">
-                    金
-                  </div>
-                  <span className="font-[800] text-2xl tracking-tight">金十期货APP</span>
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="Logo" className="h-8 object-contain" crossOrigin="anonymous" />
+                  ) : (
+                    <>
+                      <div className="w-8 h-8 bg-[#C5A059] rounded flex items-center justify-center text-white font-bold text-lg">
+                        金
+                      </div>
+                      <span className="font-[800] text-2xl tracking-tight">金十期货APP</span>
+                    </>
+                  )}
                 </div>
-                <span className="text-xs uppercase tracking-[2px] text-[#888] font-semibold">
-                  Market Intelligence Insight
-                </span>
+                <div className="flex flex-col items-end">
+                  <span className="text-xs uppercase tracking-[2px] text-[#888] font-semibold mb-1">
+                    Market Intelligence Insight
+                  </span>
+                  <span className="text-[10px] text-[#AAA] font-mono">
+                    发布时间：{publishTime}
+                  </span>
+                </div>
               </div>
 
               <div className="grid grid-cols-[1.2fr_1fr] gap-8 flex-1">
                 {/* Insight Hero (spans 2 columns) */}
                 <div className="col-span-2 mb-4">
-                  <h1 className={`text-[32px] font-bold leading-[1.2] mb-2 ${data.trend === 'up' ? 'text-[#E02424]' : 'text-[#059669]'}`}>
+                  <h1 className={`text-[32px] font-bold leading-[1.2] mb-2 ${trendColor}`}>
                     {data.title}
                   </h1>
                   <p className="text-sm text-[#666] leading-[1.6]">
@@ -315,12 +424,16 @@ export default function App() {
                   <div className="flex flex-col gap-2">
                     {data.chain.map((item, idx) => (
                       <React.Fragment key={idx}>
-                        <div className={`p-3 px-4 border-l-[3px] border-[#C5A059] text-[13px] leading-[1.5] ${idx === 3 ? 'bg-[#1A1A1A] text-white' : 'bg-[#F9F9F7]'}`}>
-                          <strong className={`block text-[11px] mb-0.5 font-normal ${idx === 3 ? 'text-gray-300' : 'text-[#888]'}`}>{item.title}</strong>
-                          {item.desc}
+                        <div className="p-3.5 px-4 border-l-[4px] border-[#C5A059] bg-[#F9F9F7] shadow-sm rounded-r">
+                          <div className="text-[15px] font-bold text-[#C5A059] mb-1.5 tracking-wide">
+                            {item.title}
+                          </div>
+                          <div className="text-[13px] text-[#333] leading-[1.6]">
+                            {item.desc}
+                          </div>
                         </div>
                         {idx < data.chain.length - 1 && (
-                          <div className="text-center text-xs text-[#C5A059] -my-1">↓</div>
+                          <div className="text-center text-lg text-[#C5A059] -my-1.5 font-bold">↓</div>
                         )}
                       </React.Fragment>
                     ))}
@@ -344,11 +457,14 @@ export default function App() {
                     <div className="grid grid-cols-2 gap-2 mt-2">
                       {data.radar.map((item, idx) => (
                         <div key={idx} className="text-[11px] flex items-center">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#C5A059] mr-2"></span>
-                          <span className="text-[#666] w-16">{item.name}</span>
-                          <span className="font-bold text-[#1A1A1A]">{item.label}</span>
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#C5A059] mr-2 shrink-0"></span>
+                          <span className="text-[#666] w-16 shrink-0">{item.name}</span>
+                          <span className="font-bold text-[#1A1A1A] truncate" title={item.label}>{item.label}</span>
                         </div>
                       ))}
+                    </div>
+                    <div className="text-[10px] text-[#888] mt-4 pt-3 border-t border-dashed border-[#E5E1D8] text-center">
+                      以上内容仅对当天行情有效，不具备任何前瞻、预测意义
                     </div>
                   </div>
 
@@ -356,33 +472,46 @@ export default function App() {
                     风险拆解 RISK ANALYSIS
                   </div>
                   <div className="flex flex-col gap-3">
-                    {data.risks.map((risk, idx) => (
-                      <div key={idx} className="p-3 border border-[#E5E1D8] rounded">
-                        <div className={`font-bold text-[13px] mb-1 flex items-center gap-1.5 ${idx === 0 ? 'text-[#E02424]' : (idx === 1 ? 'text-[#059669]' : 'text-[#E02424]')}`}>
-                          {idx === 0 ? '▲' : (idx === 1 ? '▼' : '●')} 风险提示 {idx + 1}
+                    {data.risks.map((risk, idx) => {
+                      const colorClass = risk.type === 'up' ? 'text-[#E02424]' : risk.type === 'down' ? 'text-[#059669]' : 'text-[#1A1A1A]';
+                      const icon = risk.type === 'up' ? '▲' : risk.type === 'down' ? '▼' : '●';
+                      
+                      const match = risk.text.match(/[\(（]([^()（）]+)[\)）]/);
+                      const subtitle = match ? match[1].trim() : `风险提示 ${idx + 1}`;
+                      const mainText = risk.text.replace(/[\(（][^()（）]+[\)）]/, '').trim();
+
+                      return (
+                        <div key={idx} className="p-3 border border-[#E5E1D8] rounded">
+                          <div className={`font-bold text-[13px] mb-1 flex items-center gap-1.5 ${colorClass}`}>
+                            {icon} {subtitle}
+                          </div>
+                          <div className="text-xs text-[#666] leading-[1.4]">
+                            {mainText}
+                          </div>
                         </div>
-                        <div className="text-xs text-[#666] leading-[1.4]">
-                          {risk}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
 
               {/* Footer */}
-              <div className="mt-auto flex justify-between items-end pt-6 border-t border-[#E5E1D8]">
+              <div className="mt-8 flex justify-between items-end pt-6 border-t border-[#E5E1D8]">
                 <div className="text-[10px] text-[#AAA] max-w-[500px] leading-relaxed">
-                  资料来源：金十期货研究中心、印尼能矿部(ESDM)公示文件<br/>
+                  资料来源：{data.dataSource}<br/>
                   免责声明：本卡片仅供参考，不构成任何投资建议。市场有风险，入市需谨慎。
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
                     <h4 className="text-[14px] font-bold mb-0.5 text-[#1A1A1A]">下载金十期货APP</h4>
-                    <p className="text-[11px] text-[#888]">获取品种异动实时情报</p>
+                    <p className="text-[11px] text-[#888]">获取期货今日交易线索</p>
                   </div>
-                  <div className="w-16 h-16 p-1 border border-[#E5E1D8] bg-white">
-                    <QrCode className="w-full h-full text-[#1A1A1A]" />
+                  <div className="w-[72px] h-[72px] p-1 border border-[#E5E1D8] bg-white flex items-center justify-center">
+                    {qrCodeUrl ? (
+                      <img src={qrCodeUrl} alt="QR Code" className="w-full h-full object-contain" crossOrigin="anonymous" />
+                    ) : (
+                      <QrCode className="w-full h-full text-[#1A1A1A]" />
+                    )}
                   </div>
                 </div>
               </div>
@@ -393,4 +522,3 @@ export default function App() {
     </div>
   );
 }
-
