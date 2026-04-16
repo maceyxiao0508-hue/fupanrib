@@ -18,7 +18,6 @@ interface CardData {
   summary: string;
   title: string;
   trend: 'up' | 'down' | 'neutral';
-  dataSource: string;
   chain: ChainItem[];
   radar: RadarItem[];
   risks: { text: string; type: 'up' | 'down' | 'neutral' }[];
@@ -87,7 +86,6 @@ const defaultData: CardData = {
   summary: "今天商品市场的核心交易主线是：“镍端供应收紧 + 新能源传闻扰动 + 航运情绪回落”三条线索的再定价过程。",
   title: "沪镍：印尼政策重估驱动的成本抬升行情",
   trend: 'up',
-  dataSource: "金十期货研究中心、印尼能矿部(ESDM)公示文件",
   chain: parseChain(defaultRawChain),
   radar: parseRadar(defaultRawRadar),
   risks: defaultRisks
@@ -233,16 +231,6 @@ export default function App() {
                   </select>
                 </div>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">资料来源</label>
-                <input 
-                  type="text"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] outline-none transition-all"
-                  value={data.dataSource}
-                  onChange={(e) => setData({...data, dataSource: e.target.value})}
-                />
-              </div>
             </div>
           </div>
 
@@ -324,7 +312,7 @@ export default function App() {
           {/* Image Settings */}
           <div>
             <h3 className="text-lg font-bold text-gray-900 mb-4">图片设置</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">顶部 Logo</label>
                 <label className="flex items-center justify-center w-full h-24 px-4 transition bg-white border-2 border-gray-300 border-dashed rounded-md appearance-none cursor-pointer hover:border-[#C5A059] focus:outline-none">
@@ -333,16 +321,6 @@ export default function App() {
                     <span className="font-medium text-gray-600 text-sm">上传 Logo 图片</span>
                   </span>
                   <input type="file" name="file_upload" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setLogoUrl as any)} />
-                </label>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">底部二维码</label>
-                <label className="flex items-center justify-center w-full h-24 px-4 transition bg-white border-2 border-gray-300 border-dashed rounded-md appearance-none cursor-pointer hover:border-[#C5A059] focus:outline-none">
-                  <span className="flex items-center space-x-2">
-                    <Upload className="w-5 h-5 text-gray-400" />
-                    <span className="font-medium text-gray-600 text-sm">上传二维码</span>
-                  </span>
-                  <input type="file" name="file_upload" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setQrCodeUrl as any)} />
                 </label>
               </div>
             </div>
@@ -451,7 +429,7 @@ export default function App() {
                       ))}
                     </div>
                     <div className="text-[10px] text-[#888] mt-4 pt-3 border-t border-dashed border-[#E5E1D8] text-center">
-                      以上内容为对当天交易线索的总结，不具备任何前瞻、预测意义
+                      以上内容为对当天交易线索的总结，不具备任何前瞻、预测意义，强度 ≠ 方向，只代表此因素在当天行情的重要性程度
                     </div>
                   </div>
 
@@ -485,7 +463,7 @@ export default function App() {
               {/* Footer */}
               <div className="mt-8 flex justify-between items-end pt-6 border-t border-[#E5E1D8]">
                 <div className="text-[10px] text-[#AAA] max-w-[500px] leading-relaxed">
-                  资料来源：{data.dataSource}<br/>
+                  资料来源：以上内容来自XX期货等期货公司公开研报，内容由AI生成<br/>
                   免责声明：本卡片仅供参考，不构成任何投资建议。市场有风险，入市需谨慎。
                 </div>
                 <div className="flex items-center gap-4">
