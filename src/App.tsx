@@ -89,7 +89,7 @@ const defaultData: CardData = {
   summary: "今天商品市场的核心交易主线是：“镍端供应收紧 + 新能源传闻扰动 + 航运情绪回落”三条线索的再定价过程。",
   title: "沪镍：印尼政策重估驱动的成本抬升行情",
   trend: 'up',
-  dataSource: "以上内容来自XX期货等期货公司公开研报，内容由AI生成",
+  dataSource: "以上内容来自XX期货等期货公司公开研报，呈现形式由AI辅助生成",
   chain: parseChain(defaultRawChain),
   radar: parseRadar(defaultRawRadar),
   risks: defaultRisks
