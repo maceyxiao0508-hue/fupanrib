@@ -100,8 +100,21 @@ export default function App() {
   const [rawChain, setRawChain] = useState(defaultRawChain);
   const [rawRadar, setRawRadar] = useState(defaultRawRadar);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [publishTime, setPublishTime] = useState<string>('');
   const cardRef = useRef<HTMLDivElement>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, setter: React.Dispatch<React.SetStateAction<string | null>>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setter(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   useEffect(() => {
     const updateTime = () => {
@@ -174,17 +187,6 @@ export default function App() {
 
   const removeRisk = (idx: number) => {
     setData({ ...data, risks: data.risks.filter((_, i) => i !== idx) });
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, setter: React.Dispatch<React.SetStateAction<string | null>>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setter(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
   };
 
   const trendColor = data.trend === 'up' ? 'text-[#E02424]' : data.trend === 'down' ? 'text-[#059669]' : 'text-[#1A1A1A]';
@@ -321,6 +323,33 @@ export default function App() {
 
           <hr className="border-gray-200" />
 
+          {/* Image Settings */}
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 mb-4">图片设置</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">顶部 Logo</label>
+                <label className="flex items-center justify-center w-full h-24 px-4 transition bg-white border-2 border-gray-300 border-dashed rounded-md appearance-none cursor-pointer hover:border-[#C5A059] focus:outline-none">
+                  <span className="flex items-center space-x-2">
+                    <Upload className="w-5 h-5 text-gray-400" />
+                    <span className="font-medium text-gray-600 text-sm">上传 Logo</span>
+                  </span>
+                  <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setLogoUrl)} />
+                </label>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">底部二维码</label>
+                <label className="flex items-center justify-center w-full h-24 px-4 transition bg-white border-2 border-gray-300 border-dashed rounded-md appearance-none cursor-pointer hover:border-[#C5A059] focus:outline-none">
+                  <span className="flex items-center space-x-2">
+                    <Upload className="w-5 h-5 text-gray-400" />
+                    <span className="font-medium text-gray-600 text-sm">上传二维码</span>
+                  </span>
+                  <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setQrCodeUrl)} />
+                </label>
+              </div>
+            </div>
+          </div>
+
         </div>
 
         {/* Right Column: Preview */}
@@ -347,7 +376,11 @@ export default function App() {
               {/* Header */}
               <div className="flex justify-between items-end border-b-2 border-[#1A1A1A] pb-3 mb-6">
                 <div className="flex items-center gap-3">
-                  <img src={logoImg} alt="Logo" className="h-8 object-contain" crossOrigin="anonymous" />
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="Logo" className="h-8 object-contain" crossOrigin="anonymous" />
+                  ) : (
+                    <img src={logoImg} alt="Logo" className="h-8 object-contain" crossOrigin="anonymous" />
+                  )}
                 </div>
                 <div className="flex flex-col items-end">
                   <span className="text-[10px] text-[#AAA] font-mono">
@@ -458,7 +491,11 @@ export default function App() {
                     <p className="text-[11px] text-[#888]">获取期货今日交易线索</p>
                   </div>
                   <div className="w-[72px] h-[72px] p-1 border border-[#E5E1D8] bg-white flex items-center justify-center">
-                    <img src={qrcodeImg} alt="QR Code" className="w-full h-full object-contain" crossOrigin="anonymous" />
+                    {qrCodeUrl ? (
+                      <img src={qrCodeUrl} alt="QR Code" className="w-full h-full object-contain" crossOrigin="anonymous" />
+                    ) : (
+                      <img src={qrcodeImg} alt="QR Code" className="w-full h-full object-contain" crossOrigin="anonymous" />
+                    )}
                   </div>
                 </div>
               </div>
