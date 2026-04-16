@@ -371,7 +371,7 @@ export default function App() {
             <div 
               ref={cardRef}
               className="w-[960px] min-h-[720px] bg-white border border-[#E5E1D8] shadow-[0_20px_40px_rgba(0,0,0,0.06)] p-8 flex flex-col relative shrink-0 mx-auto"
-              style={{ fontFamily: '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif', color: '#1A1A1A' }}
+              style={{ fontFamily: '"Source Han Sans", "Noto Sans CJK SC", sans-serif', color: '#1A1A1A' }}
             >
               {/* Header */}
               <div className="flex justify-between items-end border-b-2 border-[#1A1A1A] pb-3 mb-6">
