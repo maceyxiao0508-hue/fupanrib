@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
 import { Download, QrCode, Plus, Trash2, Upload } from 'lucide-react';
+import logoImg from './logo.png';
+import qrcodeImg from './qrcode.png';
 
 interface ChainItem {
   title: string;
@@ -345,7 +347,7 @@ export default function App() {
               {/* Header */}
               <div className="flex justify-between items-end border-b-2 border-[#1A1A1A] pb-3 mb-6">
                 <div className="flex items-center gap-3">
-                  <img src="/assets/logo.png" alt="Logo" className="h-8 object-contain" crossOrigin="anonymous" />
+                  <img src={logoImg} alt="Logo" className="h-8 object-contain" crossOrigin="anonymous" />
                 </div>
                 <div className="flex flex-col items-end">
                   <span className="text-[10px] text-[#AAA] font-mono">
@@ -456,7 +458,7 @@ export default function App() {
                     <p className="text-[11px] text-[#888]">获取期货今日交易线索</p>
                   </div>
                   <div className="w-[72px] h-[72px] p-1 border border-[#E5E1D8] bg-white flex items-center justify-center">
-                    <img src="/assets/qrcode.png" alt="QR Code" className="w-full h-full object-contain" crossOrigin="anonymous" />
+                    <img src={qrcodeImg} alt="QR Code" className="w-full h-full object-contain" crossOrigin="anonymous" />
                   </div>
                 </div>
               </div>
