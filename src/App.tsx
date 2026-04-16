@@ -18,6 +18,7 @@ interface CardData {
   summary: string;
   title: string;
   trend: 'up' | 'down' | 'neutral';
+  dataSource: string;
   chain: ChainItem[];
   radar: RadarItem[];
   risks: { text: string; type: 'up' | 'down' | 'neutral' }[];
@@ -86,6 +87,7 @@ const defaultData: CardData = {
   summary: "今天商品市场的核心交易主线是：“镍端供应收紧 + 新能源传闻扰动 + 航运情绪回落”三条线索的再定价过程。",
   title: "沪镍：印尼政策重估驱动的成本抬升行情",
   trend: 'up',
+  dataSource: "以上内容来自XX期货等期货公司公开研报，内容由AI生成",
   chain: parseChain(defaultRawChain),
   radar: parseRadar(defaultRawRadar),
   risks: defaultRisks
@@ -96,8 +98,6 @@ export default function App() {
   const [rawChain, setRawChain] = useState(defaultRawChain);
   const [rawRadar, setRawRadar] = useState(defaultRawRadar);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>("https://storage.googleapis.com/aistudio-user-content/2026-04-15/63442145-6611-477d-81b4-10642fcd6268.png");
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [publishTime, setPublishTime] = useState<string>('');
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -231,6 +231,16 @@ export default function App() {
                   </select>
                 </div>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">资料来源</label>
+                <input 
+                  type="text"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C5A059] focus:border-[#C5A059] outline-none transition-all"
+                  value={data.dataSource}
+                  onChange={(e) => setData({...data, dataSource: e.target.value})}
+                />
+              </div>
             </div>
           </div>
 
@@ -309,23 +319,6 @@ export default function App() {
 
           <hr className="border-gray-200" />
 
-          {/* Image Settings */}
-          <div>
-            <h3 className="text-lg font-bold text-gray-900 mb-4">图片设置</h3>
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">顶部 Logo</label>
-                <label className="flex items-center justify-center w-full h-24 px-4 transition bg-white border-2 border-gray-300 border-dashed rounded-md appearance-none cursor-pointer hover:border-[#C5A059] focus:outline-none">
-                  <span className="flex items-center space-x-2">
-                    <Upload className="w-5 h-5 text-gray-400" />
-                    <span className="font-medium text-gray-600 text-sm">上传 Logo 图片</span>
-                  </span>
-                  <input type="file" name="file_upload" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setLogoUrl as any)} />
-                </label>
-              </div>
-            </div>
-          </div>
-
         </div>
 
         {/* Right Column: Preview */}
@@ -352,16 +345,7 @@ export default function App() {
               {/* Header */}
               <div className="flex justify-between items-end border-b-2 border-[#1A1A1A] pb-3 mb-6">
                 <div className="flex items-center gap-3">
-                  {logoUrl ? (
-                    <img src={logoUrl} alt="Logo" className="h-8 object-contain" crossOrigin="anonymous" />
-                  ) : (
-                    <>
-                      <div className="w-8 h-8 bg-[#C5A059] rounded flex items-center justify-center text-white font-bold text-lg">
-                        金
-                      </div>
-                      <span className="font-[800] text-2xl tracking-tight">金十期货APP</span>
-                    </>
-                  )}
+                  <img src="/assets/logo.png" alt="Logo" className="h-8 object-contain" crossOrigin="anonymous" />
                 </div>
                 <div className="flex flex-col items-end">
                   <span className="text-[10px] text-[#AAA] font-mono">
@@ -463,7 +447,7 @@ export default function App() {
               {/* Footer */}
               <div className="mt-8 flex justify-between items-end pt-6 border-t border-[#E5E1D8]">
                 <div className="text-[10px] text-[#AAA] max-w-[500px] leading-relaxed">
-                  资料来源：以上内容来自XX期货等期货公司公开研报，内容由AI生成<br/>
+                  资料来源：{data.dataSource}<br/>
                   免责声明：本卡片仅供参考，不构成任何投资建议。市场有风险，入市需谨慎。
                 </div>
                 <div className="flex items-center gap-4">
@@ -472,11 +456,7 @@ export default function App() {
                     <p className="text-[11px] text-[#888]">获取期货今日交易线索</p>
                   </div>
                   <div className="w-[72px] h-[72px] p-1 border border-[#E5E1D8] bg-white flex items-center justify-center">
-                    {qrCodeUrl ? (
-                      <img src={qrCodeUrl} alt="QR Code" className="w-full h-full object-contain" crossOrigin="anonymous" />
-                    ) : (
-                      <QrCode className="w-full h-full text-[#1A1A1A]" />
-                    )}
+                    <img src="/assets/qrcode.png" alt="QR Code" className="w-full h-full object-contain" crossOrigin="anonymous" />
                   </div>
                 </div>
               </div>
