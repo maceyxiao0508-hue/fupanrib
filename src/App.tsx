@@ -499,6 +499,26 @@ export default function App() {
                   </div>
                 </div>
               </div>
+
+              {/* Watermarks */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden z-50">
+                {[...Array(5)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="absolute transform -rotate-12 opacity-5"
+                    style={{
+                      top: `${10 + i * 18}%`,
+                      left: `${15 + (i % 2) * 45}%`,
+                    }}
+                  >
+                    {logoUrl ? (
+                      <img src={logoUrl} alt="watermark" className="h-12 object-contain grayscale" crossOrigin="anonymous" />
+                    ) : (
+                      <img src={logoImg} alt="watermark" className="h-12 object-contain grayscale" crossOrigin="anonymous" />
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
