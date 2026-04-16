@@ -3,7 +3,7 @@ import html2canvas from 'html2canvas';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
 import { Download, QrCode, Plus, Trash2, Upload } from 'lucide-react';
 import logoImg from './logo.svg';
-import qrcodeImg from './qrcode.png';
+import qrcodeImg from './qrcode.svg';
 
 interface ChainItem {
   title: string;
