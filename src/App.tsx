@@ -43,15 +43,6 @@ const defaultRisks: { text: string; type: 'up' | 'down' | 'neutral' }[] = [
   { text: '成本上移是否能传导至终端需求（利润传导失败风险）', type: 'down' }
 ];
 
-const getRadarLabel = (score: number): string => {
-  if (score >= 90) return '极强';
-  if (score >= 70) return '偏强';
-  if (score >= 60) return '中高';
-  if (score >= 40) return '中性';
-  if (score >= 20) return '偏弱';
-  return '极弱';
-};
-
 const parseChain = (text: string): ChainItem[] => {
   return text.split('\n').filter(line => line.trim()).map(line => {
     const match = line.match(/^(?:【|\[)(.*?)(?:】|\])\s*(.*)$/);
@@ -77,11 +68,10 @@ const parseRadar = (text: string): RadarItem[] => {
       const value = parseInt(parts[1], 10);
       if (!isNaN(value)) {
         const desc = parts.slice(2).join(' ').replace(/^[（\(]|[）\)]$/g, '');
-        const label = `${getRadarLabel(value)}${desc ? `（${desc}）` : ''}`;
-        return { name, value, label };
+        return { name, value, label: desc || '' };
       }
     }
-    return { name: line.trim().substring(0, 4), label: '中性', value: 50 };
+    return { name: line.trim().substring(0, 4), label: '', value: 50 };
   });
 };
 
@@ -396,9 +386,6 @@ export default function App() {
                   )}
                 </div>
                 <div className="flex flex-col items-end">
-                  <span className="text-xs uppercase tracking-[2px] text-[#888] font-semibold mb-1">
-                    Market Intelligence Insight
-                  </span>
                   <span className="text-[10px] text-[#AAA] font-mono">
                     发布时间：{publishTime}
                   </span>
@@ -419,7 +406,7 @@ export default function App() {
                 {/* Left Column */}
                 <div className="flex flex-col">
                   <div className="text-[11px] uppercase tracking-[1.5px] text-[#C5A059] mb-4 font-bold flex items-center gap-2 after:content-[''] after:h-[1px] after:bg-[#E5E1D8] after:flex-1">
-                    交易链路 TRADING LINKAGE
+                    基本面因素
                   </div>
                   <div className="flex flex-col gap-2">
                     {data.chain.map((item, idx) => (
@@ -443,7 +430,7 @@ export default function App() {
                 {/* Right Column */}
                 <div className="flex flex-col">
                   <div className="text-[11px] uppercase tracking-[1.5px] text-[#C5A059] mb-4 font-bold flex items-center gap-2 after:content-[''] after:h-[1px] after:bg-[#E5E1D8] after:flex-1">
-                    交易雷达 RADAR SYSTEM
+                    交易雷达
                   </div>
                   <div className="mb-8">
                     <div className="h-[200px] w-full -ml-4">
@@ -464,12 +451,12 @@ export default function App() {
                       ))}
                     </div>
                     <div className="text-[10px] text-[#888] mt-4 pt-3 border-t border-dashed border-[#E5E1D8] text-center">
-                      以上内容仅对当天行情有效，不具备任何前瞻、预测意义
+                      以上内容为对当天交易线索的总结，不具备任何前瞻、预测意义
                     </div>
                   </div>
 
                   <div className="text-[11px] uppercase tracking-[1.5px] text-[#C5A059] mb-4 font-bold flex items-center gap-2 after:content-[''] after:h-[1px] after:bg-[#E5E1D8] after:flex-1">
-                    风险拆解 RISK ANALYSIS
+                    风险拆解
                   </div>
                   <div className="flex flex-col gap-3">
                     {data.risks.map((risk, idx) => {
