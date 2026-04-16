@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
 import { Download, QrCode, Plus, Trash2, Upload } from 'lucide-react';
-import logoImg from './logo.png';
+import logoImg from './logo.svg';
 import qrcodeImg from './qrcode.png';
 
 interface ChainItem {
@@ -438,12 +438,12 @@ export default function App() {
                         <Radar name="Score" dataKey="value" stroke="#C5A059" fill="#C5A059" fillOpacity={0.4} isAnimationActive={false} />
                       </RadarChart>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 mt-2">
+                    <div className="grid grid-cols-2 gap-x-2 gap-y-3 mt-2">
                       {data.radar.map((item, idx) => (
-                        <div key={idx} className="text-[11px] flex items-center">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#C5A059] mr-2 shrink-0"></span>
-                          <span className="text-[#666] w-16 shrink-0">{item.name}</span>
-                          <span className="font-bold text-[#1A1A1A] truncate" title={item.label}>{item.label}</span>
+                        <div key={idx} className="text-[11px] flex items-start leading-[1.4]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#C5A059] mr-2 shrink-0 mt-[4px]"></span>
+                          <span className="text-[#666] w-[48px] shrink-0">{item.name}</span>
+                          <span className="font-bold text-[#1A1A1A] break-words">{item.label}</span>
                         </div>
                       ))}
                     </div>
