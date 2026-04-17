@@ -505,16 +505,18 @@ export default function App() {
                 {[...Array(5)].map((_, i) => (
                   <div
                     key={i}
-                    className="absolute transform -rotate-12 opacity-5"
+                    className="absolute"
                     style={{
                       top: `${10 + i * 18}%`,
                       left: `${15 + (i % 2) * 45}%`,
+                      transform: 'rotate(-12deg)',
+                      opacity: 0.05
                     }}
                   >
                     {logoUrl ? (
-                      <img src={logoUrl} alt="watermark" className="h-12 object-contain grayscale" crossOrigin="anonymous" />
+                      <img src={logoUrl} alt="watermark" className="h-12 object-contain" style={{ filter: 'grayscale(100%)' }} crossOrigin="anonymous" />
                     ) : (
-                      <img src={logoImg} alt="watermark" className="h-12 object-contain grayscale" crossOrigin="anonymous" />
+                      <img src={logoImg} alt="watermark" className="h-12 object-contain" style={{ filter: 'grayscale(100%)' }} crossOrigin="anonymous" />
                     )}
                   </div>
                 ))}
