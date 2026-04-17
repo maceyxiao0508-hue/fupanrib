@@ -488,7 +488,7 @@ export default function App() {
                 <div className="flex items-center gap-4">
                   <div className="text-right">
                     <h4 className="text-[14px] font-bold mb-0.5 text-[#1A1A1A]">下载金十期货APP</h4>
-                    <p className="text-[11px] text-[#888]">获取期货今日交易线索</p>
+                    <p className="text-[11px] text-[#888]">获取期货今日盘面线索</p>
                   </div>
                   <div className="w-[72px] h-[72px] p-1 border border-[#E5E1D8] bg-white flex items-center justify-center">
                     {qrCodeUrl ? (
